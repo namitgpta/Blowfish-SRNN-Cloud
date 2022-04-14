@@ -25,7 +25,7 @@ public class AwsCloudDataActivity extends AppCompatActivity {
     private AwsCloudDataRecyclerViewAdapter recyclerViewAdapter;
     private ProgressBar progressBar;
 
-    ArrayList<String> timestampsArray, algorithmArray;
+    ArrayList<String> timestampsArray, algorithmArray, filesExtensionArray;
     ArrayList<Integer> idArray;
     ArrayList<byte[]> EncryptedFileBytesArray;
 
@@ -38,6 +38,7 @@ public class AwsCloudDataActivity extends AppCompatActivity {
         idArray = new ArrayList<>();
         EncryptedFileBytesArray = new ArrayList<>();
         algorithmArray = new ArrayList<>();
+        filesExtensionArray = new ArrayList<>();
 
         progressBar = findViewById(R.id.progressBarAwsCloudData);
         progressBar.setVisibility(View.VISIBLE);
@@ -68,6 +69,7 @@ public class AwsCloudDataActivity extends AppCompatActivity {
                     EncryptedFileBytesArray.add(rs.getBytes("encryptedFileBlob"));
                     timestampsArray.add(rs.getString("dateTimeStamp"));
                     algorithmArray.add(rs.getString("algorithm"));
+                    filesExtensionArray.add(rs.getString("fileExtension"));
                 }
                 connection.close();
 
@@ -82,7 +84,7 @@ public class AwsCloudDataActivity extends AppCompatActivity {
                     Toast.makeText(this, "Failed to fetch data from AWS Cloud !!!", Toast.LENGTH_LONG).show();
                 } else {
                     // setup adapter
-                    recyclerViewAdapter = new AwsCloudDataRecyclerViewAdapter(AwsCloudDataActivity.this, timestampsArray, idArray, EncryptedFileBytesArray, algorithmArray);
+                    recyclerViewAdapter = new AwsCloudDataRecyclerViewAdapter(AwsCloudDataActivity.this, timestampsArray, idArray, EncryptedFileBytesArray, algorithmArray, filesExtensionArray);
                     recyclerView.setAdapter(recyclerViewAdapter);
                 }
                 progressBar.setVisibility(View.INVISIBLE);

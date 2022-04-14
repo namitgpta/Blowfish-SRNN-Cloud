@@ -48,7 +48,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsCloudDataRecyclerViewAdapter.ViewHolder2> {
 
     private final Context context;
-    private final ArrayList<String> timestampsArray, algorithmArray;
+    private final ArrayList<String> timestampsArray, algorithmArray, filesExtensionArray;
     private final ArrayList<Integer> idArray;
     private final ArrayList<byte[]> encryptedFileBytesArray;
     boolean deleteEntrySuccessful, fileSavedOrNot;
@@ -59,8 +59,9 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
 
     String decryptionTimeTakenStr;
     long decryptionTimeLong;
+    private String currentFileExtension;
 
-    public AwsCloudDataRecyclerViewAdapter(Context context, ArrayList<String> timestampsArray, ArrayList<Integer> idArray, ArrayList<byte[]> encryptedFileBytesArray, ArrayList<String> algorithmArray) {
+    public AwsCloudDataRecyclerViewAdapter(Context context, ArrayList<String> timestampsArray, ArrayList<Integer> idArray, ArrayList<byte[]> encryptedFileBytesArray, ArrayList<String> algorithmArray, ArrayList<String> filesExtensionArray) {
         this.context = context;
         this.timestampsArray = timestampsArray;
         this.idArray = idArray;
@@ -69,6 +70,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         this.deleteEntrySuccessful = true;
         this.fileSavedOrNot = true;
         this.decryptionTimeTakenStr = "";
+        this.filesExtensionArray = filesExtensionArray;
 
         // new Alert Loading Dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -93,7 +95,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         String algo = algorithmArray.get(position);
         int id = idArray.get(position);
 
-        holder.heading.setText(String.format("%s File", algo));
+        holder.heading.setText(String.format("%s - %s File", algo, filesExtensionArray.get(position).toUpperCase()));
 
         DecimalFormat df = new DecimalFormat("0.00");
         String sizeStr = "";
@@ -127,6 +129,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         holder.date.setText(dateTimeStr);
 
         holder.saveBtn.setOnClickListener(v -> {
+            currentFileExtension = filesExtensionArray.get(position);
             holder.timeTakenTextView.setText("");
             // alertDialog for key input:
             AlertDialog.Builder alert = new AlertDialog.Builder(context);
@@ -244,7 +247,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
             dearr[j] = (((v.pow(7)).multiply(arr[j])).pow(43)).mod(n);
             yourKeyStringBuilder.append((char) dearr[j].intValue());
         }
-        Toast.makeText(context, "Your blowfish key is: " + yourKeyStringBuilder, Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "Your key is: " + yourKeyStringBuilder, Toast.LENGTH_SHORT).show();
         yourKeyString = yourKeyStringBuilder.toString();
     }
 
@@ -310,8 +313,9 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
                 ContentValues contentValues = new ContentValues();
                 String currDateTime = LocalDateTime.now().toString();
 //                System.out.println(currDateTime);
-                contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "Decrypted_PDF_" + algo + "_" + currDateTime.substring(0, currDateTime.length() - 7) + ".pdf");
-                contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
+                contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "Decrypted_File_" + algo + "_" + currDateTime.substring(0, currDateTime.length() - 7) + "." + currentFileExtension);
+//                contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
+                contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/*");
                 contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + File.separator + "Blowfish_SRNN_Files");
                 Uri keyUri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues);
                 os = contentResolver.openOutputStream(Objects.requireNonNull(keyUri));

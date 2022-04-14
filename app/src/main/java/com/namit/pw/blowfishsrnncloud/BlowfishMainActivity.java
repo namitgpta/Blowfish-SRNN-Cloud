@@ -2,10 +2,12 @@ package com.namit.pw.blowfishsrnncloud;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -38,7 +40,7 @@ public class BlowfishMainActivity extends AppCompatActivity {
     public String ALGO_STR = "Blowfish SRNN";
 
     private String ALGORITHM = "Blowfish";
-    private String keyString;
+    private String keyString, selectedFileExtension;
 
     Button chooseFileBtn, startEncryptBtn;
     TextView successFileImportTextView, successFileEncryptedTextView, encryptedKeySrnnTextView, timeTakenTextView, headingTextView;
@@ -200,7 +202,8 @@ public class BlowfishMainActivity extends AppCompatActivity {
     private void fileChooser() {
         successFileImportTextView.setVisibility(View.INVISIBLE);
         Intent i = new Intent();
-        i.setType("application/pdf");
+//        i.setType("application/pdf");
+        i.setType("application/*");
         i.setAction(Intent.ACTION_GET_CONTENT);
 
         launchSomeActivity.launch(i);
@@ -218,8 +221,10 @@ public class BlowfishMainActivity extends AppCompatActivity {
                         try {
                             inputFileStream = getContentResolver().openInputStream(fileUri);
                             inputFileBytes = getBytes(inputFileStream);
-                            System.out.println(fileUri.getPath());
-                            System.out.println(fileUri);
+//                            System.out.println(fileUri.getPath());
+//                            System.out.println(fileUri);
+                            selectedFileExtension = getFileExtension(fileUri);
+                            System.out.println(selectedFileExtension);
 
                             successFileImportTextView.setVisibility(View.VISIBLE);
                         } catch (Exception e) {
@@ -239,9 +244,10 @@ public class BlowfishMainActivity extends AppCompatActivity {
                 Class.forName("com.mysql.jdbc.Driver");
                 Connection connection = DriverManager.getConnection(AwsRdsData.url, AwsRdsData.username, AwsRdsData.password);
 
-                PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Blowfish" + "(encryptedFileBlob, algorithm) VALUES(?, ?)");
+                PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Blowfish" + "(encryptedFileBlob, algorithm, fileExtension) VALUES(?, ?, ?)");
                 preparedStatement.setBytes(1, outputBytes);
                 preparedStatement.setString(2, ALGO_STR);
+                preparedStatement.setString(3, selectedFileExtension);
                 preparedStatement.executeUpdate();
                 connection.close();
 
@@ -284,5 +290,13 @@ public class BlowfishMainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         return secret;
+    }
+
+    private String getFileExtension(Uri uri) {
+        String extension;
+        ContentResolver contentResolver = getContentResolver();
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+        extension = mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(uri));
+        return extension;
     }
 }
