@@ -20,22 +20,28 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class BlowfishMainActivity extends AppCompatActivity {
-
+    String whichCipher;
     public String ALGO_STR = "Blowfish SRNN";
 
-    private final String ALGORITHM = "Blowfish";
+    private String ALGORITHM = "Blowfish";
     private String keyString;
 
     Button chooseFileBtn, startEncryptBtn;
-    TextView successFileImportTextView, successFileEncryptedTextView, encryptedKeySrnnTextView, timeTakenTextView;
+    TextView successFileImportTextView, successFileEncryptedTextView, encryptedKeySrnnTextView, timeTakenTextView, headingTextView;
     EditText keyEditText;
     boolean encryptionSuccessFlag, uploadToAwsSuccessful;
     AlertDialog loadingDialog;
@@ -50,6 +56,11 @@ public class BlowfishMainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_blowfish_main);
 
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            whichCipher = extras.getString("whichCipher");
+        }
+
         chooseFileBtn = findViewById(R.id.chooseFileBlowfishBtn);
         startEncryptBtn = findViewById(R.id.startEncryptBtnBlowfishEncrypt);
         successFileImportTextView = findViewById(R.id.successFileImportBlowfishEncryptTextView);
@@ -57,6 +68,20 @@ public class BlowfishMainActivity extends AppCompatActivity {
         keyEditText = findViewById(R.id.editTextKeyBlowfishEncrypt);
         encryptedKeySrnnTextView = findViewById(R.id.encryptedKeySrnnTextView);
         timeTakenTextView = findViewById(R.id.timeTakenTextViewBlowfishEncryption);
+        headingTextView = findViewById(R.id.headingTextViewEncryption);
+
+        switch (whichCipher) {
+            case "AES":
+                ALGORITHM = ALGO_STR = whichCipher;
+                break;
+            case "BLOWFISH":
+            default:
+                ALGORITHM = "Blowfish";
+                ALGO_STR = "Blowfish SRNN";
+                whichCipher = "BLOWFISH";
+        }
+        headingTextView.setText(String.format("%s File Encryption: ", whichCipher));
+        successFileEncryptedTextView.setText(String.format("Encryption Successful using %s & sent to Cloud !!!", whichCipher));
 
         // new Alert Loading Dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -82,12 +107,12 @@ public class BlowfishMainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Enter the key !!!", Toast.LENGTH_SHORT).show();
             } else {
                 keyString = keyToEncrypt;
-                startEncryptionBlowfish();
+                startEncryption();
             }
         });
     }
 
-    private void startEncryptionBlowfish() {
+    private void startEncryption() {
         startTime = System.currentTimeMillis();
 
         BigInteger n, u, p, q, ua, b;
@@ -124,11 +149,7 @@ public class BlowfishMainActivity extends AppCompatActivity {
         }
     }
 
-    public void encrypt() {
-        doCrypto();
-    }
-
-    private void doCrypto() {
+    private void encrypt() {
         if (inputFileBytes == null) {
             System.out.println("inputFileBytes are null");
             return;
@@ -136,14 +157,21 @@ public class BlowfishMainActivity extends AppCompatActivity {
         long startThreadTime = System.currentTimeMillis();
         new Thread(() -> {
             try {
-                Key secretKey = new SecretKeySpec(keyString.getBytes(), ALGORITHM);
-                Cipher cipher = Cipher.getInstance(ALGORITHM);
+                Key secretKey;
+                Cipher cipher;
+                if ("AES".equals(ALGORITHM)) {
+                    String salt_AES = "1234567890987654321";
+                    secretKey = getKeyFromPassword_AES(keyString, salt_AES);
+                } else {
+                    secretKey = new SecretKeySpec(keyString.getBytes(), ALGORITHM);
+                }
+                cipher = Cipher.getInstance(ALGORITHM);
                 cipher.init(Cipher.ENCRYPT_MODE, secretKey);
                 outputBytes = cipher.doFinal(inputFileBytes);
                 encryptionSuccessFlag = true;
             } catch (Exception e) {
                 encryptionSuccessFlag = false;
-                System.out.println("Error Exception raised line 152");
+                System.out.println("Error Exception raised: Line " + Thread.currentThread().getStackTrace()[2].getLineNumber());
                 e.printStackTrace();
             }
 
@@ -170,7 +198,6 @@ public class BlowfishMainActivity extends AppCompatActivity {
     }
 
     private void fileChooser() {
-//        inputFile = null;
         successFileImportTextView.setVisibility(View.INVISIBLE);
         Intent i = new Intent();
         i.setType("application/pdf");
@@ -191,8 +218,6 @@ public class BlowfishMainActivity extends AppCompatActivity {
                         try {
                             inputFileStream = getContentResolver().openInputStream(fileUri);
                             inputFileBytes = getBytes(inputFileStream);
-//                            String uriString = fileUri.toString();
-//                            inputFile = new File(uriString);
                             System.out.println(fileUri.getPath());
                             System.out.println(fileUri);
 
@@ -208,7 +233,6 @@ public class BlowfishMainActivity extends AppCompatActivity {
             });
 
     private void uploadEncryptedFileToAws() {
-//        inputFileName = "namitFile";
         uploadToAwsSuccessful = true;
         new Thread(() -> {
             try {
@@ -247,5 +271,18 @@ public class BlowfishMainActivity extends AppCompatActivity {
             byteBuffer.write(buffer, 0, len);
         }
         return byteBuffer.toByteArray();
+    }
+
+    private SecretKey getKeyFromPassword_AES(String password, String salt) {
+        SecretKey secret = null;
+        SecretKeyFactory factory;
+        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt.getBytes(), 65536, 256);
+        try {
+            factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            secret = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return secret;
     }
 }

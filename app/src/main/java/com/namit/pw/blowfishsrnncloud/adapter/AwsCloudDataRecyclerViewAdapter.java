@@ -28,6 +28,9 @@ import java.io.File;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -37,6 +40,9 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsCloudDataRecyclerViewAdapter.ViewHolder2> {
@@ -87,7 +93,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         String algo = algorithmArray.get(position);
         int id = idArray.get(position);
 
-        DecimalFormat df = new DecimalFormat("0.00");
+        DecimalFormat df = new DecimalFormat("0.0");
         String sizeStr = algo + " - ";
         if (sizeInKb > 1000.0) {
             sizeStr += df.format(sizeInKb / 1000.0);
@@ -134,7 +140,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
                 decodeSrnnKeys(srnnKeysStrArray);
                 decryptionTimeLong = System.currentTimeMillis() - decryptionTimeLong;
                 try {
-                    decrypt(encryptedFileBytesArray.get(position), holder);
+                    decrypt(encryptedFileBytesArray.get(position), holder, algo);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -239,7 +245,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         yourKeyString = yourKeyStringBuilder.toString();
     }
 
-    public void decrypt(byte[] outputBytes, ViewHolder2 holder) {
+    public void decrypt(byte[] outputBytes, ViewHolder2 holder, String algo) {
         if (outputBytes == null) {
             System.out.println("outputBytes in aws adapter is null: line 185");
             return;
@@ -248,8 +254,17 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         loadingDialog.show();
         new Thread(() -> {
             try {
-                Key secretKey = new SecretKeySpec(yourKeyString.getBytes(), "Blowfish");
-                Cipher cipher = Cipher.getInstance("Blowfish");
+                Key secretKey;
+                Cipher cipher;
+                String cipherAlgo = "Blowfish";
+                if ("AES".equals(algo)) {
+                    String salt_AES = "1234567890987654321";
+                    secretKey = getKeyFromPassword_AES(yourKeyString, salt_AES);
+                    cipherAlgo = algo;
+                } else {
+                    secretKey = new SecretKeySpec(yourKeyString.getBytes(), "Blowfish");
+                }
+                cipher = Cipher.getInstance(cipherAlgo);
                 cipher.init(Cipher.DECRYPT_MODE, secretKey);
 
                 decryptedFileBytes = cipher.doFinal(outputBytes);
@@ -257,7 +272,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
 
             } catch (Exception e) {
                 fileSavedOrNot = false;
-                System.out.println("Error Exception raised aws recycler line 240");
+                System.out.println("Error Exception raised aws recycler Line: " + Thread.currentThread().getStackTrace()[2].getLineNumber());
                 e.printStackTrace();
             }
 
@@ -272,7 +287,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
                         decryptionTimeTakenStr += " sec";
                         holder.timeTakenTextView.setText(decryptionTimeTakenStr);
 
-                        generateFileAfterDecryption();
+                        generateFileAfterDecryption(algo);
                     }
                 } else {
                     Toast.makeText(context, "Unable to Decrypt the file!!!. Check logs for error", Toast.LENGTH_LONG).show();
@@ -282,7 +297,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         }).start();
     }
 
-    private void generateFileAfterDecryption() {
+    private void generateFileAfterDecryption(String algo) {
         loadingDialog.show();
         fileSavedOrNot = true;
         new Thread(() -> {
@@ -290,8 +305,9 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
             try {
                 ContentResolver contentResolver = context.getContentResolver();
                 ContentValues contentValues = new ContentValues();
-                LocalDateTime currDateTime = java.time.LocalDateTime.now();
-                contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "Decrypted_PDF_" + currDateTime + ".pdf");
+                String currDateTime = LocalDateTime.now().toString();
+//                System.out.println(currDateTime);
+                contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "Decrypted_PDF_" + algo + "_" + currDateTime.substring(0, currDateTime.length() - 7) + ".pdf");
                 contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
                 contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + File.separator + "Blowfish_SRNN_Files");
                 Uri keyUri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues);
@@ -324,5 +340,18 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
             });
 
         }).start();
+    }
+
+    private SecretKey getKeyFromPassword_AES(String password, String salt) {
+        SecretKey secret = null;
+        SecretKeyFactory factory;
+        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt.getBytes(), 65536, 256);
+        try {
+            factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            secret = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return secret;
     }
 }

@@ -7,15 +7,14 @@
     tools:context=".BlowfishMainActivity">
 
     <TextView
-        android:id="@+id/textView2"
+        android:id="@+id/headingTextViewEncryption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="44dp"
-        android:text="Blowfish Encryption: "
+        android:text="Blowfish File Encryption: "
         android:textSize="24sp"
         android:textStyle="bold|italic"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -28,7 +27,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.182"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+        app:layout_constraintTop_toBottomOf="@+id/headingTextViewEncryption" />
 
     <Button
         android:id="@+id/chooseFileBlowfishBtn"
@@ -39,7 +38,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.464"
         app:layout_constraintStart_toEndOf="@+id/textView7"
-        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+        app:layout_constraintTop_toBottomOf="@+id/headingTextViewEncryption" />
 
     <TextView
         android:id="@+id/successFileImportBlowfishEncryptTextView"
@@ -97,6 +96,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:gravity="center"
         android:text="Encryption Successful using Blowfish &amp; sent to Cloud !!!"
         android:textColor="#4CAF50"
         android:textStyle="italic"
@@ -109,7 +109,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Note down your encrypted Key using SRNN: "
+        android:text="Note down your encrypted Key: "
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"

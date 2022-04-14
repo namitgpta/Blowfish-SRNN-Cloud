@@ -20,7 +20,10 @@ public class MainActivity extends AppCompatActivity {
         aesBtn = findViewById(R.id.aesEncryptBtn);
 
         blowfishSrnnBtn.setOnClickListener(view -> {
-            startActivity(new Intent(MainActivity.this, BlowfishMainActivity.class));
+            Intent i=new Intent(MainActivity.this, BlowfishMainActivity.class);
+            // value in CAPITALS:
+            i.putExtra("whichCipher", "BLOWFISH");
+            startActivity(i);
         });
 
         awsCloudDataBtn.setOnClickListener(view -> {
@@ -28,7 +31,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         aesBtn.setOnClickListener(view -> {
-            startActivity(new Intent(MainActivity.this, BlowfishMainActivity.class));
+            Intent i=new Intent(MainActivity.this, BlowfishMainActivity.class);
+            // value in CAPITALS:
+            i.putExtra("whichCipher", "AES");
+            startActivity(i);
         });
     }
 }
