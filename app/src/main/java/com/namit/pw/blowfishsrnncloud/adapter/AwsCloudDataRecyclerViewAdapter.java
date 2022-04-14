@@ -93,8 +93,10 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
         String algo = algorithmArray.get(position);
         int id = idArray.get(position);
 
-        DecimalFormat df = new DecimalFormat("0.0");
-        String sizeStr = algo + " - ";
+        holder.heading.setText(String.format("%s File", algo));
+
+        DecimalFormat df = new DecimalFormat("0.00");
+        String sizeStr = "";
         if (sizeInKb > 1000.0) {
             sizeStr += df.format(sizeInKb / 1000.0);
             sizeStr += " MB";
@@ -164,7 +166,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
     }
 
     public static class ViewHolder2 extends RecyclerView.ViewHolder {
-        public TextView date, sizeTextView, timeTakenTextView;
+        public TextView date, sizeTextView, timeTakenTextView, heading;
         //        public ImageView imageView;
         public Button saveBtn, deleteBtn;
         public ProgressBar progressBarDelete;
@@ -177,6 +179,7 @@ public class AwsCloudDataRecyclerViewAdapter extends RecyclerView.Adapter<AwsClo
             sizeTextView = itemView.findViewById(R.id.textView_size_awsCloudData_row);
             progressBarDelete = itemView.findViewById(R.id.progressBar_awsCloudData_row);
             timeTakenTextView = itemView.findViewById(R.id.timeTaken_textView_awsCloudData_row);
+            heading = itemView.findViewById(R.id.textView_heading_awsCloudData_row);
 //            imageView = itemView.findViewById(R.id.image_row_hf);
 
             progressBarDelete.setVisibility(View.INVISIBLE);
